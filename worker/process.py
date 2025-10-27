@@ -13,6 +13,7 @@ while True:
     if 'Messages' in messages:
         msg = messages['Messages'][0]
         key = msg['Body']
+        print(f"Processing: {key}")  # Debug
         try:
             obj = s3.get_object(Bucket=bucket, Key=key)
             img = Image.open(io.BytesIO(obj['Body'].read()))
@@ -23,7 +24,9 @@ while True:
                 img.save(output, format='JPEG')
                 output.seek(0)
                 s3.upload_fileobj(output, bucket, output_key)
+            print(f"Processed and uploaded: {output_key}")  # Debug
             sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=msg['ReceiptHandle'])
+            print(f"Deleted message: {key}")  # Debug
         except Exception as e:
             print(f"Error processing {key}: {e}")
     time.sleep(1)
