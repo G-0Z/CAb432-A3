@@ -5,7 +5,7 @@ import uuid
 app = FastAPI()
 s3 = boto3.client('s3')
 sqs = boto3.client('sqs')
-queue_url = 'YOUR_SQS_QUEUE_URL'  # Replace after creating SQS
+queue_url = 'https://sqs.ap-southeast-2.amazonaws.com/901444280953/image-processing-queue-n11543027'
 bucket = 'maxgo-cab432-2025'
 
 @app.post("/upload")
