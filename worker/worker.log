@@ -1,0 +1,120 @@
+nohup: ignoring input
+worker started; polling…
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/1c28df60779e.jpg grayscale {}
+processed: processed/1c28df60779e.jpg
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/3996434a1659.png grayscale {}
+processed: processed/3996434a1659.png
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/c5eb5b48c743.png grayscale {}
+processed: processed/c5eb5b48c743.png
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/787510655207.jpg grayscale {}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/787510655207.jpg An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/c4dae814cfb4.png resize {'width': 100, 'height': 100}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/c4dae814cfb4.png An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b93e44a8-d0c1-703f-2140-851d7889d935/7378570508b7.jpg grayscale {}
+processed: processed/7378570508b7.jpg
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/8aa265bcaf5e.png rotate {'deg': 90}
+processed: processed/8aa265bcaf5e.png
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/8cbcb8f5493c.png grayscale {}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/8cbcb8f5493c.png An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/3e018a262f23.jpg grayscale {}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/3e018a262f23.jpg An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/30b6654d004b.jpg grayscale {}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/30b6654d004b.jpg An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/2ef16f4158d6.jpg grayscale {}
+error: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/2ef16f4158d6.jpg An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+Traceback (most recent call last):
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 98, in main
+    process_one(key, mode, params)
+  File "/home/ubuntu/CAb432-A3/worker/process.py", line 53, in process_one
+    obj = s3.get_object(Bucket=BUCKET, Key=key)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/CAb432-A3/env/lib/python3.12/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/8acb300c99f1.jpg grayscale {}
+processed: processed/8acb300c99f1.jpg
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/cf40f0680b24.jpg watermark {'text': 'TESTING'}
+processed: processed/cf40f0680b24.jpg
+processing: uploads/b9ae6478-30e1-701c-9c9a-a55c28df54ff/affd0ade54a9.png resize {'width': 100, 'height': 100}
+processed: processed/affd0ade54a9.png

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>User — Cloud Image Processor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body{background:#f6f7fb}
+    .drop{border:2px dashed #cbd5e1;border-radius:12px;padding:18px;text-align:center;background:#fff}
+    .drop.drag{background:#eef2ff;border-color:#93c5fd}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+    .thumb{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff}
+    .thumb img{width:100%;height:160px;object-fit:cover}
+    .progress{height:6px}
+    .hidden{display:none}
+    .slider{position:relative;max-width:900px;margin:0 auto}
+    .slider img{display:block;width:100%;height:auto}
+    .slider .top{position:absolute;inset:0;overflow:hidden}
+    .slider .handle{position:absolute;top:0;bottom:0;width:3px;background:#2563eb;left:50%;cursor:ew-resize}
+    .badge-pill{border-radius:9999px}
+    .preset-inputs .form-control {max-width: 120px;}
+    .toast-container{position:fixed;top:1rem;right:1rem;z-index:1080}
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="mb-0">User</h2>
+    <button class="btn btn-outline-secondary btn-sm" id="logoutBtn">Logout</button>
+  </div>
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <form id="controls" class="row g-3 align-items-end">
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="fileInput">Choose Images</label>
+          <input id="fileInput" class="form-control" type="file" accept=".jpg,.jpeg,.png" multiple/>
+          <div class="form-text">PNG / JPG / JPEG. Drag & drop supported.</div>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Preset</label>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <select id="mode" class="form-select" style="max-width:180px">
+              <option value="grayscale">Grayscale</option>
+              <option value="resize">Resize</option>
+              <option value="rotate">Rotate</option>
+              <option value="thumb">Thumbnail</option>
+              <option value="watermark">Watermark</option>
+            </select>
+            <div id="resizeInputs" class="preset-inputs d-flex gap-1 hidden">
+              <input id="resizeW" class="form-control form-control-sm" type="number" min="32" placeholder="W">
+              <input id="resizeH" class="form-control form-control-sm" type="number" min="32" placeholder="H">
+            </div>
+            <input id="rotateDeg" class="form-control form-control-sm preset-inputs hidden" type="number" step="1" placeholder="°" style="max-width:100px">
+            <input id="wmText" class="form-control form-control-sm preset-inputs hidden" type="text" placeholder="Text" style="max-width:180px">
+          </div>
+        </div>
+        <div class="col-12">
+          <div id="drop" class="drop" tabindex="0">Drop files here or click “Start Upload”</div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button id="startBtn" type="button" class="btn btn-primary">Start Upload</button>
+        </div>
+      </form>
+      <div class="mt-3 small">
+        <span id="statusBadge" class="badge bg-secondary badge-pill">Idle</span>
+        <span id="err" class="text-danger ms-2"></span>
+      </div>
+      <div id="queue" class="mt-4"></div>
+      <hr class="my-4"/>
+      <h5 class="mb-2">Your uploads</h5>
+      <div id="gallery" class="grid" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+  <div id="toast" class="toast align-items-center text-bg-primary border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastText">Working…</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // === NO TOKEN CHECK — SERVER HANDLES AUTH ===
+  // The backend protects /upload and /user/uploads with current_user()
+
+  const API_UPLOAD = '/upload';
+  const API_LIST = '/user/uploads';
+
+  const el = (s) => document.querySelector(s);
+  const toast = (m) => {
+    el('#toastText').textContent = m;
+    new bootstrap.Toast(el('#toast')).show();
+  };
+  const setStatus = (type, txt) => {
+    const map = { idle: 'secondary', uploading: 'primary', queued: 'warning', ready: 'success', error: 'danger' };
+    const b = el('#statusBadge');
+    b.className = `badge bg-${map[type] || 'secondary'} badge-pill`;
+    b.textContent = txt;
+  };
+
+  const fileInput = el('#fileInput');
+  const drop = el('#drop');
+  const startBtn = el('#startBtn');
+  const queue = el('#queue');
+  const gallery = el('#gallery');
+  const errBox = el('#err');
+  const modeSelect = el('#mode');
+  const resizeInputs = el('#resizeInputs');
+  const rotateInput = el('#rotateDeg');
+  const wmInput = el('#wmText');
+
+  const state = { files: [], jobs: [] };
+
+  el('#logoutBtn').onclick = () => {
+    document.cookie = 'id_token=; Max-Age=0; path=/';
+    location.href = '/login.html';
+  };
+
+  modeSelect.addEventListener('change', () => {
+    const mode = modeSelect.value;
+    resizeInputs.classList.toggle('hidden', mode !== 'resize');
+    rotateInput.classList.toggle('hidden', mode !== 'rotate');
+    wmInput.classList.toggle('hidden', mode !== 'watermark');
+  });
+
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+  drop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => addFiles(e.target.files));
+
+  function addFiles(files) {
+    for (const f of files) {
+      if (!/image\/(jpeg|jpg|png)/i.test(f.type)) continue;
+      state.files.push(f);
+      const row = document.createElement('div');
+      row.className = 'mb-3';
+      row.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="text-truncate" style="max-width:60%">${f.name}</div>
+          <div class="small text-muted"><span class="pct">0</span>%</div>
+        </div>
+        <div class="progress mt-1" role="progressbar" aria-valuenow="0">
+          <div class="progress-bar" style="width:0%"></div>
+        </div>`;
+      queue.prepend(row);
+      state.jobs.push({ file: f, row });
+    }
+  }
+
+  async function uploadOne(job) {
+    return new Promise((resolve, reject) => {
+      const fd = new FormData();
+      fd.append('file', job.file);
+
+      const params = new URLSearchParams();
+      params.append('mode', modeSelect.value);
+      if (modeSelect.value === 'resize') {
+        const w = el('#resizeW').value.trim();
+        const h = el('#resizeH').value.trim();
+        if (w) params.append('width', w);
+        if (h) params.append('height', h);
+      }
+      if (modeSelect.value === 'rotate') {
+        const deg = el('#rotateDeg').value.trim();
+        if (deg) params.append('deg', deg);
+      }
+      if (modeSelect.value === 'watermark') {
+        const text = el('#wmText').value.trim();
+        if (text) params.append('text', text);
+      }
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_UPLOAD}?${params.toString()}`, true);
+      xhr.withCredentials = true;
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          job.row.querySelector('.progress-bar').style.width = pct + '%';
+          job.row.querySelector('.pct').textContent = pct;
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText);
+          const processedURL = data.processed_url;
+          setStatus('queued', 'Processing…');
+          toast('Queued. Waiting…');
+          waitForImage(processedURL, 40).then(ok => {
+            if (ok) {
+              addCard(data.original_url, processedURL);
+              setStatus('ready', 'Done');
+              toast('Processed!');
+              resolve();
+            } else {
+              setStatus('error', 'Timeout');
+              errBox.textContent = 'Still processing.';
+              reject(new Error('timeout'));
+            }
+          });
+        } else {
+          reject(new Error('HTTP ' + xhr.status));
+        }
+      };
+      xhr.onerror = () => reject(new Error('network'));
+      xhr.send(fd);
+    });
+  }
+
+  startBtn.addEventListener('click', async () => {
+    if (!state.jobs.length) return toast('No files');
+    errBox.textContent = '';
+    setStatus('uploading', 'Uploading…');
+    startBtn.disabled = true;
+    try {
+      for (const job of state.jobs) {
+        await uploadOne(job);
+      }
+    } catch (e) {
+      errBox.textContent = e.message;
+    } finally {
+      startBtn.disabled = false;
+      state.files = []; state.jobs = [];
+      queue.innerHTML = '';
+      await loadGallery();
+    }
+  });
+
+  function addCard(originalURL, processedURL) {
+    const card = document.createElement('div');
+    card.className = 'thumb';
+    card.innerHTML = `
+      <img src="${processedURL}?_=${Date.now()}" alt="Processed">
+      <div class="p-2 d-flex justify-content-between align-items-center">
+        <div class="btn-group">
+          <a class="btn btn-sm btn-outline-secondary" href="${processedURL}" target="_blank">Open</a>
+        </div>
+        <a class="small text-muted text-decoration-none" href="${originalURL}" target="_blank">orig</a>
+      </div>`;
+    gallery.prepend(card);
+  }
+
+  async function waitForImage(url, tries = 40) {
+    for (let i = 0; i < tries; i++) {
+      const ok = await new Promise(res => {
+        const img = new Image();
+        img.onload = () => res(true);
+        img.onerror = () => res(false);
+        img.src = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+      });
+      if (ok) return true;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    return false;
+  }
+
+  async function loadGallery() {
+    try {
+      const r = await fetch(API_LIST, { credentials: 'include' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      gallery.innerHTML = '';
+      (data.items || []).forEach(it => {
+        addCard(`/files/${it.key}`, `/files/${it.processedKey}`);
+      });
+    } catch (e) {
+      console.error("Failed to load gallery:", e);
+    }
+  }
+
+  setStatus('idle', 'Ready');
+  loadGallery();
+</script>
+</body>
+</html>

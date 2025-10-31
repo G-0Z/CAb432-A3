@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin — Cloud Image Processor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body{background:#f6f7fb}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+    .thumb{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;position:relative}
+    .thumb img{width:100%;height:160px;object-fit:cover}
+    .thumb .form-check{position:absolute;top:8px;left:8px}
+    .thumb .btn-group{position:absolute;bottom:8px;right:8px}
+    .thumb.selected{box-shadow:0 0 0 3px #0d6efd}
+    .spinner-border-sm{width:1rem;height:1rem}
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="mb-0">Admin</h2>
+    <div>
+      <a class="btn btn-outline-secondary btn-sm me-2" href="/user.html">User</a>
+      <button class="btn btn-outline-secondary btn-sm" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2">
+          <button id="selectAll" class="btn btn-sm btn-outline-secondary">Select All</button>
+          <button id="clearSel" class="btn btn-sm btn-outline-secondary">Clear</button>
+        </div>
+        <div class="d-flex gap-2">
+          <button id="bulkReprocess" class="btn btn-sm btn-primary d-flex align-items-center gap-1">
+            <span class="spinner-border spinner-border-sm hidden" id="reprocSpin"></span>
+            Reprocess
+          </button>
+          <button id="bulkDelete" class="btn btn-sm btn-danger d-flex align-items-center gap-1">
+            <span class="spinner-border spinner-border-sm hidden" id="delSpin"></span>
+            Delete
+          </button>
+        </div>
+      </div>
+      <div id="stats" class="mb-2 small text-muted"></div>
+      <div id="alert" class="alert alert-danger hidden" role="alert"></div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // === NO TOKEN CHECK — SERVER HANDLES AUTH ===
+  // The backend protects /admin/uploads with current_user()
+
+  const S3_BASE = 'https://maxgo-cab432-2025.s3.ap-southeast-2.amazonaws.com';
+  const API_LIST = '/admin/uploads';
+  const API_DELETE = '/admin/delete';
+  const API_REPROC = '/admin/requeue';
+  const grid = document.getElementById('grid');
+  const stats = document.getElementById('stats');
+  const alertEl = document.getElementById('alert');
+  const reprocSpin = document.getElementById('reprocSpin');
+  const delSpin = document.getElementById('delSpin');
+
+  document.getElementById('logoutBtn').onclick = () => {
+    document.cookie = 'id_token=; Max-Age=0; path=/';
+    location.href = '/login.html';
+  };
+
+  const items = [];
+  const chosen = new Set();
+
+  function showAlert(msg) {
+    alertEl.textContent = msg;
+    alertEl.classList.remove('hidden');
+    setTimeout(() => alertEl.classList.add('hidden'), 5000);
+  }
+
+  function card(it, idx) {
+    const processed = it.processedKey || ('processed/' + it.key.split('/').pop());
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.dataset.key = it.key;
+    div.innerHTML = `
+      <img src="/files/${processed}" alt="Processed" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxNjBweCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4='">
+      <div class="form-check">
+        <input class="form-check-input pick" type="checkbox" id="c${idx}" aria-label="Select">
+      </div>
+      <div class="btn-group">
+        <a class="btn btn-sm btn-outline-secondary" href="/files/${it.key}" target="_blank">orig</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/files/${processed}" target="_blank">open</a>
+      </div>`;
+    const checkbox = div.querySelector('.pick');
+    checkbox.onchange = (e) => {
+      const key = it.key;
+      e.target.checked ? chosen.add(key) : chosen.delete(key);
+      div.classList.toggle('selected', e.target.checked);
+      updateStats();
+    };
+    return div;
+  }
+
+  function updateStats() {
+    stats.textContent = `${chosen.size} selected • ${items.length} total`;
+  }
+
+  async function loadAll() {
+    try {
+      const r = await fetch(API_LIST, { credentials: 'include' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      items.splice(0, items.length, ...(data.items || []));
+      grid.innerHTML = '';
+      items.forEach((it, i) => grid.appendChild(card(it, i)));
+      updateStats();
+    } catch (e) {
+      showAlert('Failed to load uploads: ' + e.message);
+    }
+  }
+
+  async function act(endpoint, spinEl, actionName) {
+    if (!chosen.size) return showAlert('No items selected');
+    spinEl.classList.remove('hidden');
+    const keys = Array.from(chosen);
+    let success = 0, fail = 0;
+    for (const k of keys) {
+      try {
+        const r = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: k }),
+          credentials: 'include'
+        });
+        if (r.ok) success++; else fail++;
+      } catch {
+        fail++;
+      }
+    }
+    spinEl.classList.add('hidden');
+    chosen.clear();
+    grid.querySelectorAll('.pick').forEach(x => x.checked = false);
+    grid.querySelectorAll('.thumb').forEach(t => t.classList.remove('selected'));
+    updateStats();
+    await loadAll();
+    showAlert(`${success} ${actionName}d, ${fail} failed`);
+  }
+
+  document.getElementById('selectAll').onclick = () => {
+    chosen.clear();
+    items.forEach(it => chosen.add(it.key));
+    grid.querySelectorAll('.pick').forEach(x => x.checked = true);
+    grid.querySelectorAll('.thumb').forEach(t => t.classList.add('selected'));
+    updateStats();
+  };
+
+  document.getElementById('clearSel').onclick = () => {
+    chosen.clear();
+    grid.querySelectorAll('.pick').forEach(x => x.checked = false);
+    grid.querySelectorAll('.thumb').forEach(t => t.classList.remove('selected'));
+    updateStats();
+  };
+
+  document.getElementById('bulkReprocess').onclick = () => act(API_REPROC, reprocSpin, 'reprocess');
+  document.getElementById('bulkDelete').onclick = () => {
+    if (!chosen.size) return showAlert('No items selected');
+    if (!confirm(`Delete ${chosen.size} item(s)? This cannot be undone.`)) return;
+    act(API_DELETE, delSpin, 'delete');
+  };
+
+  loadAll();
+</script>
+</body>
+</html>
